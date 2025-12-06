@@ -6,6 +6,12 @@ from .models import *
 from .serializers import *
 from django.utils import timezone
 from datetime import timedelta
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import login, logout, authenticate
+from django.contrib import messages
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.decorators import api_view
 
 class InventoryViewSet(viewsets.ModelViewSet):
     """Manage inventory items"""
@@ -200,3 +206,92 @@ class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         # In real app, filter by user permissions
         return self.queryset
+    
+
+@login_required
+def dashboard(request):
+    """Main dashboard view"""
+    return render(request, 'dashboard.html')
+
+def login_view(request):
+    """Login view"""
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        user = authenticate(request, username=username, password=password)
+        
+        if user is not None:
+            login(request, user)
+            messages.success(request, 'Login successful!')
+            return redirect('dashboard')
+        else:
+            messages.error(request, 'Invalid credentials')
+    
+    return render(request, 'login.html')
+
+def logout_view(request):
+    """Logout view"""
+    logout(request)
+    messages.success(request, 'Logged out successfully')
+    return redirect('login')
+
+# Additional API endpoints for frontend
+@api_view(['GET'])
+def check_auth(request):
+    """Check if user is authenticated"""
+    return Response({'authenticated': request.user.is_authenticated})
+
+@api_view(['GET'])
+def get_ai_insights(request):
+    """Get AI insights for dashboard"""
+    if not request.user.is_authenticated:
+        return Response({'error': 'Not authenticated'}, status=401)
+    
+    # Get low stock items
+    low_items = InventoryItem.objects.filter(
+        quantity__lte=models.F('min_threshold'),
+        product__user=request.user
+    )
+    
+    # Get most urgent prediction
+    urgent_prediction = Prediction.objects.filter(
+        user=request.user,
+        predicted_runout_date__lte=timezone.now() + timedelta(days=3)
+    ).first()
+    
+    insight = {
+        'recommendation': {
+            'title': 'Smart Recommendation',
+            'message': 'All systems operational',
+            'action': 'View Details'
+        }
+    }
+    
+    if urgent_prediction:
+        insight['recommendation'] = {
+            'title': 'Urgent Reorder Needed',
+            'message': f'{urgent_prediction.product.name} will run out soon',
+            'action': 'Reorder Now',
+            'product_id': str(urgent_prediction.product.id),
+            'prediction_id': str(urgent_prediction.id)
+        }
+    
+    return Response(insight)
+
+@api_view(['GET'])
+def vendor_comparison(request):
+    """Get vendor price comparison"""
+    # This would integrate with Amazon/Walmart APIs
+    vendors = [
+        {
+            'name': 'Amazon Fresh',
+            'total_price': '87.45',
+            'delivery_time': 'Tomorrow'
+        },
+        {
+            'name': 'Walmart',
+            'total_price': '92.30',
+            'delivery_time': 'Today'
+        }
+    ]
+    return Response(vendors)

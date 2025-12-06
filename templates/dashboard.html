@@ -1,0 +1,1060 @@
+<!-- templates/dashboard.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - HomeGrocer{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<header>
+    <div class="container">
+        <div class="header-container">
+            <div class="logo">
+                <i class="fas fa-shopping-basket"></i>
+                Home<span>Grocer</span>
+            </div>
+            
+            <div class="header-actions">
+                {% if user.is_authenticated %}
+                <div class="ai-status">
+                    AI Processing Active
+                </div>
+                
+                <div class="user-menu">
+                    <div class="user-avatar">
+                        {{ user.username|first|upper }}
+                    </div>
+                    <span class="user-name">{{ user.username }}</span>
+                    <i class="fas fa-chevron-down"></i>
+                    
+                    <div class="user-dropdown">
+                        <a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                    </div>
+                </div>
+                
+                <button class="btn btn-primary" onclick="showAddItemModal()">
+                    <i class="fas fa-plus"></i> Add Item
+                </button>
+                {% else %}
+                <a href="{% url 'login' %}" class="btn btn-primary">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Main Content -->
+<div class="container">
+    <div class="main-layout">
+        <!-- Left Sidebar - Navigation -->
+        <nav class="sidebar">
+            <div class="card mb-3">
+                <div class="sidebar-nav">
+                    <a href="#dashboard" class="nav-item active" onclick="showSection('dashboard')">
+                        <i class="fas fa-tachometer-alt"></i>
+                        Dashboard
+                    </a>
+                    <a href="#inventory" class="nav-item" onclick="showSection('inventory')">
+                        <i class="fas fa-boxes"></i>
+                        Inventory
+                        <span id="lowStockBadge" class="nav-badge badge-danger">0</span>
+                    </a>
+                    <a href="#predictions" class="nav-item" onclick="showSection('predictions')">
+                        <i class="fas fa-brain"></i>
+                        AI Predictions
+                        <span id="predictionBadge" class="nav-badge badge-warning">0</span>
+                    </a>
+                    <a href="#shopping" class="nav-item" onclick="showSection('shopping')">
+                        <i class="fas fa-shopping-cart"></i>
+                        Shopping Carts
+                        <span id="cartBadge" class="nav-badge badge-info">0</span>
+                    </a>
+                    <a href="#approvals" class="nav-item" onclick="showSection('approvals')">
+                        <i class="fas fa-check-circle"></i>
+                        Approvals
+                    </a>
+                    <div class="nav-divider"></div>
+                    <a href="#privacy" class="nav-item" onclick="showSection('privacy')">
+                        <i class="fas fa-shield-alt"></i>
+                        Privacy Center
+                    </a>
+                </div>
+            </div>
+            
+            <div class="privacy-badge">
+                <i class="fas fa-lock"></i>
+                Local AI • Encrypted Data
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="section active">
+                <div class="section-header">
+                    <div>
+                        <h1 class="section-title">Dashboard Overview</h1>
+                        <p class="section-subtitle">AI-powered insights for your household</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="runAIInsights()">
+                        <i class="fas fa-robot"></i> Run AI Analysis
+                    </button>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="stats-grid mb-3" id="statsGrid">
+                    <!-- Stats will be loaded via AJAX -->
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="grid-2 mb-3">
+                    <div class="card">
+                        <h3 class="section-title mb-2">Quick Add</h3>
+                        <div class="grid-2">
+                            <button class="action-btn" onclick="showScanModal()">
+                                <i class="fas fa-receipt"></i>
+                                <div>
+                                    <div class="font-semibold">Scan Receipt</div>
+                                    <div class="text-xs text-muted">OCR Processing</div>
+                                </div>
+                            </button>
+                            <button class="action-btn" onclick="checkEmailOrders()">
+                                <i class="fas fa-envelope"></i>
+                                <div>
+                                    <div class="font-semibold">Email Orders</div>
+                                    <div class="text-xs text-muted">Auto-import</div>
+                                </div>
+                            </button>
+                            <button class="action-btn" onclick="showAddItemModal()">
+                                <i class="fas fa-plus-circle"></i>
+                                <div>
+                                    <div class="font-semibold">Manual Entry</div>
+                                    <div class="text-xs text-muted">Quick add</div>
+                                </div>
+                            </button>
+                            <button class="action-btn" onclick="openVendorIntegration()">
+                                <i class="fas fa-store"></i>
+                                <div>
+                                        <div class="font-semibold">Vendor Sync</div>
+                                        <div class="text-xs text-muted">Amazon/Walmart</div>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <h3 class="section-title mb-2">AI Insights</h3>
+                            <div class="ai-insights" id="aiInsights">
+                                <p class="font-semibold mb-2">💡 Smart Recommendation</p>
+                                <p class="text-sm mb-2" id="aiRecommendation">Loading AI insights...</p>
+                                <div class="flex gap-2">
+                                    <button class="btn btn-success btn-sm" onclick="addRecommendedItem()">
+                                        <i class="fas fa-cart-plus"></i> Add to Cart
+                                    </button>
+                                    <button class="btn btn-secondary btn-sm">
+                                        View Details
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Inventory Section -->
+                <section id="inventory" class="section hidden">
+                    <div class="section-header">
+                        <div>
+                            <h1 class="section-title">Household Inventory</h1>
+                            <p class="section-subtitle">Track and manage your household items</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="btn btn-secondary" onclick="exportInventory()">
+                                <i class="fas fa-download"></i> Export
+                            </button>
+                            <button class="btn btn-primary" onclick="showAddItemModal()">
+                                <i class="fas fa-plus"></i> Add Item
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="flex justify-between items-center mb-3">
+                            <div>
+                                <h3 class="font-semibold">Current Inventory</h3>
+                                <p class="text-sm text-muted"><span id="lowStockCount">0</span> items low in stock</p>
+                            </div>
+                            <input type="text" id="inventorySearch" placeholder="Search inventory..." 
+                                   onkeyup="searchInventory()" 
+                                   style="padding: 0.5rem; border: 1px solid var(--border); border-radius: var(--radius-md);">
+                        </div>
+                        
+                        <div class="overflow-auto">
+                            <table class="inventory-table">
+                                <thead>
+                                    <tr>
+                                        <th>Item</th>
+                                        <th>Category</th>
+                                        <th>Quantity</th>
+                                        <th>Status</th>
+                                        <th>Expiry</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inventoryTableBody">
+                                    <!-- Inventory items will be loaded via AJAX -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="mt-3 flex justify-between items-center">
+                            <div class="text-sm text-muted" id="inventorySummary"></div>
+                            <div class="pagination" id="inventoryPagination"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Predictions Section -->
+                <section id="predictions" class="section hidden">
+                    <div class="section-header">
+                        <div>
+                            <h1 class="section-title">AI Predictions</h1>
+                            <p class="section-subtitle">Smart forecasting and recommendations</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="generatePredictions()">
+                            <i class="fas fa-brain"></i> Generate Predictions
+                        </button>
+                    </div>
+
+                    <div class="prediction-cards" id="predictionCards">
+                        <!-- Prediction cards will be loaded via AJAX -->
+                    </div>
+                    
+                    <div class="mt-3 text-center" id="predictionStatus"></div>
+                </section>
+
+                <!-- Shopping Carts Section -->
+                <section id="shopping" class="section hidden">
+                    <div class="section-header">
+                        <div>
+                            <h1 class="section-title">Shopping Carts</h1>
+                            <p class="section-subtitle">Manage your automated shopping carts</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="btn btn-secondary" onclick="syncWithVendors()">
+                                <i class="fas fa-sync"></i> Sync Prices
+                            </button>
+                            <button class="btn btn-primary" onclick="buildAICart()">
+                                <i class="fas fa-robot"></i> AI Build Cart
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="card">
+                            <h3 class="section-title mb-3">Active Cart</h3>
+                            <div id="cartItems">
+                                <!-- Cart items will be loaded via AJAX -->
+                            </div>
+                            <div class="flex justify-between items-center mt-3 pt-3 border-t">
+                                <div>
+                                    <div class="text-sm text-muted">Total</div>
+                                    <div class="font-bold text-lg" id="cartTotal">$0.00</div>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button class="btn btn-secondary" onclick="clearCart()">Clear</button>
+                                    <button class="btn btn-success" onclick="requestApproval()">Request Approval</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <h3 class="section-title mb-3">Vendor Comparison</h3>
+                            <div class="space-y-3" id="vendorComparison">
+                                <!-- Vendor comparison will be loaded via AJAX -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Approvals Section -->
+                <section id="approvals" class="section hidden">
+                    <div class="section-header">
+                        <div>
+                            <h1 class="section-title">Approval Requests</h1>
+                            <p class="section-subtitle">Review and approve shopping carts</p>
+                        </div>
+                    </div>
+
+                    <div class="approval-cards" id="approvalCards">
+                        <!-- Approval cards will be loaded via AJAX -->
+                    </div>
+                </section>
+
+                <!-- Privacy Center Section -->
+                <section id="privacy" class="section hidden">
+                    <div class="section-header">
+                        <div>
+                            <h1 class="section-title">Privacy Center</h1>
+                            <p class="section-subtitle">Your data is encrypted and stays local</p>
+                        </div>
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="card">
+                            <h3 class="section-title mb-3">Privacy Controls</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <div class="font-semibold">Local AI Processing</div>
+                                        <div class="text-sm text-muted">All ML runs on your device</div>
+                                    </div>
+                                    <div class="badge badge-success">Active</div>
+                                </div>
+                                
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <div class="font-semibold">End-to-End Encryption</div>
+                                        <div class="text-sm text-muted">Your data is encrypted</div>
+                                    </div>
+                                    <div class="badge badge-success">Active</div>
+                                </div>
+                                
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <div class="font-semibold">No Cloud Storage</div>
+                                        <div class="text-sm text-muted">Data stays on your device</div>
+                                    </div>
+                                    <div class="badge badge-success">Active</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <h3 class="section-title mb-3">Data Management</h3>
+                            <div class="space-y-3">
+                                <button class="action-btn" onclick="exportAllData()">
+                                    <i class="fas fa-download"></i>
+                                    <div>
+                                        <div class="font-semibold">Export All Data</div>
+                                        <div class="text-xs text-muted">Download encrypted backup</div>
+                                    </div>
+                                </button>
+                                
+                                <button class="action-btn" onclick="purgeData()">
+                                    <i class="fas fa-trash"></i>
+                                    <div>
+                                        <div class="font-semibold">Purge All Data</div>
+                                        <div class="text-xs text-muted">Permanently delete everything</div>
+                                    </div>
+                                </button>
+                                
+                                <button class="action-btn" onclick="viewAuditLogs()">
+                                    <i class="fas fa-clipboard-list"></i>
+                                    <div>
+                                        <div class="font-semibold">View Audit Log</div>
+                                        <div class="text-xs text-muted">Complete activity history</div>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+
+            <!-- Right Panel - Quick Actions -->
+            <aside class="actions-panel">
+                <div class="card mb-3">
+                    <h3 class="section-title mb-3">Quick Actions</h3>
+                    <div class="action-buttons">
+                        <button class="action-btn" onclick="scanReceipt()">
+                            <i class="fas fa-receipt"></i>
+                            Scan Receipt
+                        </button>
+                        <button class="action-btn" onclick="importEmail()">
+                            <i class="fas fa-envelope"></i>
+                            Import Email
+                        </button>
+                        <button class="action-btn" onclick="runPredictions()">
+                            <i class="fas fa-brain"></i>
+                            Run AI Predictions
+                        </button>
+                        <button class="action-btn" onclick="checkLowStock()">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Check Low Stock
+                        </button>
+                        <button class="action-btn" onclick="buildSmartCart()">
+                            <i class="fas fa-robot"></i>
+                            Build Smart Cart
+                        </button>
+                        <button class="action-btn" onclick="syncVendors()">
+                            <i class="fas fa-store"></i>
+                            Sync Vendors
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 class="section-title mb-3">AI Assistant</h3>
+                    <div class="ai-insights" id="aiAssistant">
+                        <p class="font-semibold mb-2">🤖 AI Assistant</p>
+                        <p class="text-sm mb-2">Analyzing your consumption patterns...</p>
+                        <button class="btn btn-primary btn-sm" onclick="getAIRecommendation()">
+                            <i class="fas fa-bolt"></i> Get Recommendation
+                        </button>
+                    </div>
+                    
+                    <div class="privacy-badge mt-3">
+                        <i class="fas fa-user-shield"></i>
+                        Your data never leaves this device
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="modalsContainer">
+        <!-- Modals will be injected here -->
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Global variables
+    const API_BASE = '/api/';
+    const CSRF_TOKEN = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    // Initialize the application
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check authentication
+        checkAuth();
+        
+        // Hide loading screen
+        setTimeout(() => {
+            document.getElementById('loadingScreen').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('loadingScreen').style.display = 'none';
+            }, 300);
+        }, 1000);
+        
+        // Load initial data
+        loadDashboardStats();
+        loadInventory();
+        loadPredictions();
+        loadCart();
+        loadApprovals();
+        
+        // Set up keyboard shortcuts
+        setupKeyboardShortcuts();
+        
+        // Set up auto-refresh
+        setInterval(updateBadges, 30000); // Every 30 seconds
+    });
+    
+    // Check authentication
+    async function checkAuth() {
+        try {
+            const response = await fetch('/api/auth/check/', {
+                headers: {
+                    'X-CSRFToken': CSRF_TOKEN
+                }
+            });
+            
+            if (!response.ok) {
+                window.location.href = '/login/';
+            }
+        } catch (error) {
+            console.error('Auth check failed:', error);
+        }
+    }
+    
+    // API Helper Functions
+    async function apiFetch(endpoint, options = {}) {
+        const url = API_BASE + endpoint;
+        
+        const defaultOptions = {
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': CSRF_TOKEN,
+                ...options.headers
+            },
+            credentials: 'same-origin'
+        };
+        
+        const config = { ...defaultOptions, ...options };
+        
+        try {
+            const response = await fetch(url, config);
+            
+            if (response.status === 401) {
+                window.location.href = '/login/';
+                return null;
+            }
+            
+            if (response.status === 204) {
+                return null;
+            }
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.detail || 'API request failed');
+            }
+            
+            return data;
+        } catch (error) {
+            console.error(`API Error (${endpoint}):`, error);
+            showNotification(error.message, 'error');
+            throw error;
+        }
+    }
+    
+    // Load Dashboard Stats
+    async function loadDashboardStats() {
+        try {
+            const [inventory, predictions, carts, approvals] = await Promise.all([
+                apiFetch('inventory/low_stock/'),
+                apiFetch('predictions/'),
+                apiFetch('carts/?status=PENDING_APPROVAL'),
+                apiFetch('approvals/?status=PENDING')
+            ]);
+            
+            // Update stats grid
+            const statsGrid = document.getElementById('statsGrid');
+            statsGrid.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-label">
+                        <i class="fas fa-exclamation-triangle text-danger"></i>
+                        Low Stock Items
+                    </div>
+                    <div class="stat-value text-danger">${inventory?.count || 0}</div>
+                </div>
+                
+                <div class="stat-card warning">
+                    <div class="stat-label">
+                        <i class="fas fa-clock text-warning"></i>
+                        Urgent Predictions
+                    </div>
+                    <div class="stat-value text-warning">${predictions?.count || 0}</div>
+                </div>
+                
+                <div class="stat-card success">
+                    <div class="stat-label">
+                        <i class="fas fa-shopping-cart text-success"></i>
+                        Pending Carts
+                    </div>
+                    <div class="stat-value text-success">${carts?.count || 0}</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-label">
+                        <i class="fas fa-dollar-sign text-primary"></i>
+                        Monthly Spend
+                    </div>
+                    <div class="stat-value">$${calculateMonthlySpend()}</div>
+                </div>
+            `;
+            
+            // Update badges
+            document.getElementById('lowStockBadge').textContent = inventory?.count || 0;
+            document.getElementById('predictionBadge').textContent = predictions?.count || 0;
+            document.getElementById('cartBadge').textContent = carts?.count || 0;
+            
+            // Update AI insights
+            updateAIInsights();
+            
+        } catch (error) {
+            console.error('Failed to load dashboard stats:', error);
+        }
+    }
+    
+    // Load Inventory
+    async function loadInventory(page = 1) {
+        try {
+            const data = await apiFetch(`inventory/?page=${page}`);
+            
+            const tableBody = document.getElementById('inventoryTableBody');
+            const lowStockCount = document.getElementById('lowStockCount');
+            
+            if (data && data.results) {
+                let lowCount = 0;
+                
+                tableBody.innerHTML = data.results.map(item => {
+                    const isLow = item.quantity <= item.min_threshold;
+                    if (isLow) lowCount++;
+                    
+                    const progress = Math.min((item.quantity / item.min_threshold) * 100, 100);
+                    const progressClass = progress <= 25 ? 'progress-low' : 
+                                        progress <= 50 ? 'progress-medium' : 'progress-high';
+                    
+                    return `
+                        <tr>
+                            <td class="flex items-center gap-3">
+                                <div class="product-icon">
+                                    <i class="fas fa-${getProductIcon(item.product.category)}"></i>
+                                </div>
+                                <div>
+                                    <div class="font-semibold">${item.product.name}</div>
+                                    <div class="text-sm text-muted">${item.product.brand || 'Generic'}</div>
+                                </div>
+                            </td>
+                            <td>${item.product.category_name}</td>
+                            <td>
+                                <div class="quantity-indicator">
+                                    <span>${item.quantity} ${item.unit}</span>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill ${progressClass}" style="width: ${progress}%"></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                ${isLow ? 
+                                    '<span class="badge badge-danger">Low</span>' : 
+                                    '<span class="badge badge-success">Good</span>'
+                                }
+                            </td>
+                            <td>${item.expiry_date ? formatDate(item.expiry_date) : 'N/A'}</td>
+                            <td>
+                                <div class="flex gap-1">
+                                    <button class="icon-btn" onclick="consumeItem('${item.id}', 1)">
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                    <button class="icon-btn" onclick="restockItem('${item.id}', 1)">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                    <button class="icon-btn" onclick="editInventoryItem('${item.id}')">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+                
+                lowStockCount.textContent = lowCount;
+                document.getElementById('lowStockBadge').textContent = lowCount;
+                
+                // Update summary
+                document.getElementById('inventorySummary').textContent = 
+                    `Showing ${data.results.length} of ${data.count} items`;
+                
+                // Update pagination
+                updatePagination('inventoryPagination', data, page);
+            }
+        } catch (error) {
+            console.error('Failed to load inventory:', error);
+        }
+    }
+    
+    // Load Predictions
+    async function loadPredictions() {
+        try {
+            const data = await apiFetch('predictions/');
+            const container = document.getElementById('predictionCards');
+            
+            if (data && data.results) {
+                container.innerHTML = data.results.map(prediction => {
+                    const daysUntil = Math.ceil((new Date(prediction.predicted_runout_date) - new Date()) / (1000 * 60 * 60 * 24));
+                    const isUrgent = daysUntil <= 2;
+                    
+                    return `
+                        <div class="prediction-card ${isUrgent ? 'urgent' : ''}">
+                            <div class="prediction-header">
+                                <div>
+                                    <div class="font-semibold">${prediction.product_name}</div>
+                                    <div class="text-sm text-muted">Will run out in ${daysUntil} days</div>
+                                </div>
+                                <span class="confidence">${Math.round(prediction.confidence * 100)}%</span>
+                            </div>
+                            <p class="text-sm mb-2">Predicted quantity: ${prediction.predicted_quantity}</p>
+                            <div class="flex gap-2">
+                                <button class="btn btn-success btn-sm" onclick="addPredictionToCart('${prediction.product}')">
+                                    <i class="fas fa-cart-plus"></i> Add to Cart
+                                </button>
+                                <button class="btn btn-secondary btn-sm" onclick="snoozePrediction('${prediction.id}')">
+                                    Snooze
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                document.getElementById('predictionBadge').textContent = data.count || 0;
+            }
+        } catch (error) {
+            console.error('Failed to load predictions:', error);
+        }
+    }
+    
+    // Load Shopping Cart
+    async function loadCart() {
+        try {
+            const data = await apiFetch('carts/active/');
+            const container = document.getElementById('cartItems');
+            const totalElement = document.getElementById('cartTotal');
+            
+            if (data) {
+                container.innerHTML = data.items.map(item => {
+                    return `
+                        <div class="cart-item">
+                            <div class="cart-item-img">
+                                <i class="fas fa-${getProductIcon(item.product.category)}"></i>
+                            </div>
+                            <div class="cart-item-details">
+                                <div class="font-semibold">${item.product_name}</div>
+                                <div class="text-sm text-muted">${item.quantity} ${item.unit || 'units'}</div>
+                            </div>
+                            <div class="cart-item-price">$${item.unit_price}</div>
+                            <div class="quantity-control">
+                                <button class="quantity-btn" onclick="updateCartItemQuantity('${item.id}', -1)">-</button>
+                                <span>${item.quantity}</span>
+                                <button class="quantity-btn" onclick="updateCartItemQuantity('${item.id}', 1)">+</button>
+                            </div>
+                            <button class="icon-btn" onclick="removeCartItem('${item.id}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+                
+                totalElement.textContent = `$${data.total_amount || '0.00'}`;
+            }
+            
+            // Load vendor comparison
+            loadVendorComparison();
+        } catch (error) {
+            console.error('Failed to load cart:', error);
+        }
+    }
+    
+    // Load Vendor Comparison
+    async function loadVendorComparison() {
+        try {
+            const data = await apiFetch('vendors/comparison/');
+            const container = document.getElementById('vendorComparison');
+            
+            if (data) {
+                container.innerHTML = data.map(vendor => {
+                    return `
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <div class="font-semibold">${vendor.name}</div>
+                                <div class="text-sm text-muted">Delivery: ${vendor.delivery_time}</div>
+                            </div>
+                            <div class="font-bold">$${vendor.total_price}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        } catch (error) {
+            console.error('Failed to load vendor comparison:', error);
+        }
+    }
+    
+    // Load Approvals
+    async function loadApprovals() {
+        try {
+            const data = await apiFetch('approvals/?status=PENDING');
+            const container = document.getElementById('approvalCards');
+            
+            if (data && data.results) {
+                container.innerHTML = data.results.map(approval => {
+                    return `
+                        <div class="approval-card">
+                            <div>
+                                <div class="font-semibold">Cart #${approval.cart.id.substring(0, 8)}</div>
+                                <div class="text-sm text-muted">${approval.cart.items_count} items • ${approval.cart.vendor_name || 'Multiple vendors'}</div>
+                                <div class="font-bold mt-1">$${approval.cart.total_amount}</div>
+                            </div>
+                            <div class="approval-actions">
+                                <button class="btn btn-success" onclick="approveCart('${approval.id}')">
+                                    <i class="fas fa-check"></i> Approve
+                                </button>
+                                <button class="btn btn-danger" onclick="rejectCart('${approval.id}')">
+                                    <i class="fas fa-times"></i> Reject
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        } catch (error) {
+            console.error('Failed to load approvals:', error);
+        }
+    }
+    
+    // Update AI Insights
+    async function updateAIInsights() {
+        try {
+            const data = await apiFetch('predictions/ai_insights/');
+            const container = document.getElementById('aiInsights');
+            
+            if (data && data.recommendation) {
+                container.innerHTML = `
+                    <p class="font-semibold mb-2">💡 ${data.recommendation.title}</p>
+                    <p class="text-sm mb-2">${data.recommendation.message}</p>
+                    <div class="flex gap-2">
+                        <button class="btn btn-success btn-sm" onclick="addToCart('${data.recommendation.product_id}')">
+                            <i class="fas fa-cart-plus"></i> ${data.recommendation.action || 'Add to Cart'}
+                        </button>
+                        <button class="btn btn-secondary btn-sm" onclick="showPredictionDetails('${data.recommendation.prediction_id}')">
+                            View Details
+                        </button>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Failed to load AI insights:', error);
+        }
+    }
+    
+    // Helper Functions
+    function getProductIcon(category) {
+        const icons = {
+            'Dairy': 'wine-bottle',
+            'Produce': 'apple-alt',
+            'Meat': 'drumstick-bite',
+            'Bakery': 'bread-slice',
+            'Pantry': 'jar',
+            'Beverages': 'wine-glass-alt',
+            'Frozen': 'snowflake'
+        };
+        return icons[category] || 'shopping-basket';
+    }
+    
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString();
+    }
+    
+    function calculateMonthlySpend() {
+        // This would call an API endpoint in production
+        return '247.50';
+    }
+    
+    function updatePagination(elementId, data, currentPage) {
+        const container = document.getElementById(elementId);
+        if (!container || !data) return;
+        
+        const pages = Math.ceil(data.count / (data.page_size || 10));
+        
+        let html = '';
+        if (pages > 1) {
+            html = '<div class="flex gap-1">';
+            for (let i = 1; i <= pages; i++) {
+                html += `
+                    <button class="btn ${i === currentPage ? 'btn-primary' : 'btn-secondary'} btn-sm"
+                            onclick="loadInventory(${i})">
+                        ${i}
+                    </button>
+                `;
+            }
+            html += '</div>';
+        }
+        
+        container.innerHTML = html;
+    }
+    
+    // Action Functions
+    async function addItemToInventory(productData) {
+        try {
+            const response = await apiFetch('inventory/', {
+                method: 'POST',
+                body: JSON.stringify(productData)
+            });
+            
+            if (response) {
+                showNotification('Item added to inventory', 'success');
+                loadInventory();
+                loadDashboardStats();
+            }
+        } catch (error) {
+            console.error('Failed to add item:', error);
+        }
+    }
+    
+    async function consumeItem(itemId, quantity) {
+        try {
+            const response = await apiFetch(`inventory/${itemId}/consume/`, {
+                method: 'POST',
+                body: JSON.stringify({ quantity })
+            });
+            
+            if (response) {
+                showNotification('Item consumption recorded', 'success');
+                loadInventory();
+            }
+        } catch (error) {
+            console.error('Failed to consume item:', error);
+        }
+    }
+    
+    async function generatePredictions() {
+        try {
+            showNotification('Generating AI predictions...', 'info');
+            
+            const response = await apiFetch('predictions/generate_predictions/', {
+                method: 'POST'
+            });
+            
+            if (response) {
+                showNotification(`Generated ${response.predictions?.length || 0} predictions`, 'success');
+                loadPredictions();
+                loadDashboardStats();
+            }
+        } catch (error) {
+            console.error('Failed to generate predictions:', error);
+        }
+    }
+    
+    async function buildAICart() {
+        try {
+            showNotification('AI is building an optimized shopping cart...', 'info');
+            
+            const response = await apiFetch('carts/build_ai_cart/', {
+                method: 'POST'
+            });
+            
+            if (response) {
+                showNotification('AI cart built successfully', 'success');
+                loadCart();
+            }
+        } catch (error) {
+            console.error('Failed to build AI cart:', error);
+        }
+    }
+    
+    async function approveCart(approvalId) {
+        try {
+            const response = await apiFetch(`approvals/${approvalId}/approve/`, {
+                method: 'POST'
+            });
+            
+            if (response) {
+                showNotification('Cart approved successfully', 'success');
+                loadApprovals();
+                loadDashboardStats();
+            }
+        } catch (error) {
+            console.error('Failed to approve cart:', error);
+        }
+    }
+    
+    // Modal Functions
+    function showAddItemModal() {
+        const modalHtml = `
+            <div class="modal-overlay" onclick="closeModal()">
+                <div class="modal-content" onclick="event.stopPropagation()">
+                    <div class="modal-header">
+                        <h3>Add Item to Inventory</h3>
+                        <button class="modal-close" onclick="closeModal()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="addItemForm" onsubmit="submitAddItemForm(event)">
+                            <div class="form-group">
+                                <label>Product Name *</label>
+                                <input type="text" name="name" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Category</label>
+                                <select name="category">
+                                    <option value="Dairy">Dairy</option>
+                                    <option value="Produce">Produce</option>
+                                    <option value="Meat">Meat</option>
+                                    <option value="Bakery">Bakery</option>
+                                    <option value="Pantry">Pantry</option>
+                                </select>
+                            </div>
+                            <div class="grid-2">
+                                <div class="form-group">
+                                    <label>Quantity *</label>
+                                    <input type="number" name="quantity" step="0.01" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Unit</label>
+                                    <select name="unit">
+                                        <option value="each">each</option>
+                                        <option value="g">g</option>
+                                        <option value="kg">kg</option>
+                                        <option value="ml">ml</option>
+                                        <option value="L">L</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Minimum Threshold</label>
+                                <input type="number" name="min_threshold" step="0.01" value="1">
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                                <button type="submit" class="btn btn-primary">Add Item</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('modalsContainer').innerHTML = modalHtml;
+    }
+    
+    async function submitAddItemForm(event) {
+        event.preventDefault();
+        const formData = new FormData(event.target);
+        const itemData = Object.fromEntries(formData);
+        
+        await addItemToInventory(itemData);
+        closeModal();
+    }
+    
+    function closeModal() {
+        document.getElementById('modalsContainer').innerHTML = '';
+    }
+    
+    // Notification System
+    function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.innerHTML = `
+            <span>${message}</span>
+            <button onclick="this.parentElement.remove()">&times;</button>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 5000);
+    }
+    
+    // Update badges periodically
+    async function updateBadges() {
+        try {
+            const [inventory, predictions, carts] = await Promise.all([
+                apiFetch('inventory/low_stock/'),
+                apiFetch('predictions/'),
+                apiFetch('carts/?status=PENDING_APPROVAL')
+            ]);
+            
+            document.getElementById('lowStockBadge').textContent = inventory?.count || 0;
+            document.getElementById('predictionBadge').textContent = predictions?.count || 0;
+            document.getElementById('cartBadge').textContent = carts?.count || 0;
+        } catch (error) {
+            console.error('Failed to update badges:', error);
+        }
+    }
+    
+    // Export functions for HTML onclick handlers
+    window.showSection = showSection;
+    window.showAddItemModal = showAddItemModal;
+    window.generatePredictions = generatePredictions;
+    window.buildAICart = buildAICart;
+    window.approveCart = approveCart;
+    window.consumeItem = consumeItem;
+    window.closeModal = closeModal;
+</script>
+{% endblock %}

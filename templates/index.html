@@ -1,0 +1,1500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HomeGrocer - AI Shopping Assistant</title>
+    
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- CSS -->
+    <style>
+        /* ===== CSS Reset & Variables ===== */
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --primary-light: #e0e7ff;
+            --secondary: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --success: #10b981;
+            --info: #3b82f6;
+            
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --bg-sidebar: #0f172a;
+            --bg-card: #ffffff;
+            
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+            
+            --border: #e2e8f0;
+            --border-light: #f1f5f9;
+            
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+            
+            --radius-sm: 0.375rem;
+            --radius-md: 0.5rem;
+            --radius-lg: 0.75rem;
+            --radius-xl: 1rem;
+            
+            --transition: all 0.2s ease;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            line-height: 1.5;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* ===== Utility Classes ===== */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+        
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            padding: 1.5rem;
+            transition: var(--transition);
+        }
+        
+        .card:hover {
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.625rem 1.25rem;
+            border-radius: var(--radius-md);
+            font-weight: 500;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+            outline: none;
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+        
+        .btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+        
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+        
+        .btn-warning {
+            background: var(--warning);
+            color: white;
+        }
+        
+        .btn-sm {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.75rem;
+        }
+        
+        .icon-btn {
+            width: 2.5rem;
+            height: 2.5rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-md);
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .icon-btn:hover {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+        
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.625rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .badge-success { background: #d1fae5; color: #065f46; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
+        .badge-info { background: #dbeafe; color: #1e40af; }
+        .badge-secondary { background: var(--bg-secondary); color: var(--text-secondary); }
+        
+        .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
+        
+        .section {
+            margin-bottom: 2rem;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .section-title {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            font-size: 1.25rem;
+            color: var(--text-primary);
+        }
+        
+        .section-subtitle {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+        
+        /* ===== Loading Screen ===== */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.3s ease;
+        }
+        
+        .loader {
+            text-align: center;
+        }
+        
+        .ai-loader {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1rem;
+        }
+        
+        .ai-loader i {
+            font-size: 2.5rem;
+            color: var(--primary);
+            position: relative;
+            z-index: 2;
+        }
+        
+        .ai-loader::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: var(--primary-light);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.5; transform: translate(-50%, -50%) scale(0.8); }
+            50% { opacity: 0.2; transform: translate(-50%, -50%) scale(1.2); }
+            100% { opacity: 0.5; transform: translate(-50%, -50%) scale(0.8); }
+        }
+        
+        /* ===== Header ===== */
+        header {
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 0;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: var(--text-primary);
+        }
+        
+        .logo i {
+            color: var(--primary);
+            font-size: 1.75rem;
+        }
+        
+        .logo span {
+            color: var(--primary);
+        }
+        
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .ai-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.375rem 0.75rem;
+            background: var(--primary-light);
+            border-radius: var(--radius-md);
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--primary);
+        }
+        
+        .ai-status::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: blink 2s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* ===== Main Layout ===== */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 250px 1fr 300px;
+            gap: 1.5rem;
+            padding: 1.5rem 0;
+            min-height: calc(100vh - 73px);
+        }
+        
+        /* ===== Sidebar Navigation ===== */
+        .sidebar {
+            position: sticky;
+            top: 5rem;
+            height: calc(100vh - 7rem);
+            overflow-y: auto;
+        }
+        
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            border-radius: var(--radius-md);
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: var(--transition);
+            position: relative;
+        }
+        
+        .nav-item:hover {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+        
+        .nav-item.active {
+            background: var(--primary);
+            color: white;
+            font-weight: 500;
+        }
+        
+        .nav-item i {
+            width: 20px;
+            text-align: center;
+        }
+        
+        .nav-badge {
+            position: absolute;
+            right: 1rem;
+            font-size: 0.7rem;
+            padding: 0.125rem 0.375rem;
+        }
+        
+        /* ===== Main Content ===== */
+        .main-content {
+            min-height: calc(100vh - 10rem);
+        }
+        
+        /* ===== Dashboard Stats ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: 1.25rem;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .stat-card.warning { border-color: var(--warning); }
+        .stat-card.success { border-color: var(--success); }
+        .stat-card.danger { border-color: var(--danger); }
+        
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin: 0.5rem 0;
+        }
+        
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        /* ===== Inventory Section ===== */
+        .inventory-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .inventory-table th {
+            background: var(--bg-secondary);
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .inventory-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-light);
+        }
+        
+        .inventory-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .inventory-table tr:hover {
+            background: var(--bg-secondary);
+        }
+        
+        .quantity-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .progress-bar {
+            width: 100px;
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            border-radius: 3px;
+        }
+        
+        .progress-low { background: var(--danger); }
+        .progress-medium { background: var(--warning); }
+        .progress-high { background: var(--success); }
+        
+        /* ===== Prediction Cards ===== */
+        .prediction-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+        
+        .prediction-card {
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 1.25rem;
+            position: relative;
+        }
+        
+        .prediction-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+            background: var(--warning);
+        }
+        
+        .prediction-card.urgent::before { background: var(--danger); }
+        .prediction-card.normal::before { background: var(--success); }
+        
+        .prediction-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 0.75rem;
+        }
+        
+        .confidence {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            background: var(--primary-light);
+            color: var(--primary);
+            border-radius: var(--radius-sm);
+        }
+        
+        /* ===== Shopping Cart ===== */
+        .cart-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            margin-bottom: 0.75rem;
+        }
+        
+        .cart-item-img {
+            width: 60px;
+            height: 60px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--text-muted);
+        }
+        
+        .cart-item-details {
+            flex: 1;
+        }
+        
+        .cart-item-price {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .quantity-control {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .quantity-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: var(--bg-primary);
+            cursor: pointer;
+        }
+        
+        /* ===== Approval Section ===== */
+        .approval-cards {
+            display: grid;
+            gap: 1rem;
+        }
+        
+        .approval-card {
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 1.5rem;
+            align-items: center;
+        }
+        
+        .approval-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        /* ===== Quick Actions Panel ===== */
+        .actions-panel {
+            position: sticky;
+            top: 5rem;
+            height: calc(100vh - 7rem);
+            overflow-y: auto;
+        }
+        
+        .action-buttons {
+            display: grid;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.875rem 1rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            width: 100%;
+            text-align: left;
+        }
+        
+        .action-btn:hover {
+            background: var(--primary-light);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        
+        .action-btn i {
+            width: 20px;
+            color: var(--text-secondary);
+        }
+        
+        .action-btn:hover i {
+            color: var(--primary);
+        }
+        
+        /* ===== AI Insights ===== */
+        .ai-insights {
+            background: var(--primary-light);
+            border: 1px solid var(--primary);
+            border-radius: var(--radius-lg);
+            padding: 1.25rem;
+        }
+        
+        .insight-item {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(79, 70, 229, 0.1);
+        }
+        
+        .insight-item:first-child {
+            margin-top: 0;
+            padding-top: 0;
+            border-top: none;
+        }
+        
+        /* ===== Privacy Badge ===== */
+        .privacy-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            background: #d1fae5;
+            color: #065f46;
+            border-radius: var(--radius-md);
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-top: 1rem;
+        }
+        
+        /* ===== Responsive Design ===== */
+        @media (max-width: 1200px) {
+            .main-layout {
+                grid-template-columns: 200px 1fr 250px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 992px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar, .actions-panel {
+                display: none;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .grid-3, .grid-4 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .header-actions {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .stats-grid,
+            .grid-2,
+            .grid-3,
+            .grid-4 {
+                grid-template-columns: 1fr;
+            }
+            
+            .approval-card {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* ===== Utility Classes ===== */
+        .mb-1 { margin-bottom: 0.5rem; }
+        .mb-2 { margin-bottom: 1rem; }
+        .mb-3 { margin-bottom: 1.5rem; }
+        .mt-1 { margin-top: 0.5rem; }
+        .mt-2 { margin-top: 1rem; }
+        .mt-3 { margin-top: 1.5rem; }
+        
+        .text-sm { font-size: 0.875rem; }
+        .text-xs { font-size: 0.75rem; }
+        
+        .text-primary { color: var(--text-primary); }
+        .text-secondary { color: var(--text-secondary); }
+        .text-muted { color: var(--text-muted); }
+        
+        .font-semibold { font-weight: 600; }
+        .font-bold { font-weight: 700; }
+        
+        .hidden { display: none; }
+        .block { display: block; }
+        .flex { display: flex; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .gap-2 { gap: 0.5rem; }
+        .gap-3 { gap: 1rem; }
+        .gap-4 { gap: 1.5rem; }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loader">
+            <div class="ai-loader">
+                <i class="fas fa-robot"></i>
+            </div>
+            <p>Initializing AI Shopping Assistant...</p>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <div class="header-container">
+                <div class="logo">
+                    <i class="fas fa-shopping-basket"></i>
+                    Home<span>Grocer</span>
+                </div>
+                
+                <div class="header-actions">
+                    <div class="ai-status">
+                        AI Processing Active
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="showAddItemModal()">
+                        <i class="fas fa-plus"></i> Add Item
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="main-layout">
+            <!-- Left Sidebar - Navigation -->
+            <nav class="sidebar">
+                <div class="card mb-3">
+                    <div class="sidebar-nav">
+                        <a href="#dashboard" class="nav-item active" onclick="showSection('dashboard')">
+                            <i class="fas fa-tachometer-alt"></i>
+                            Dashboard
+                        </a>
+                        <a href="#inventory" class="nav-item" onclick="showSection('inventory')">
+                            <i class="fas fa-boxes"></i>
+                            Inventory
+                            <span class="nav-badge badge-danger">12</span>
+                        </a>
+                        <a href="#predictions" class="nav-item" onclick="showSection('predictions')">
+                            <i class="fas fa-brain"></i>
+                            AI Predictions
+                            <span class="nav-badge badge-warning">5</span>
+                        </a>
+                        <a href="#shopping" class="nav-item" onclick="showSection('shopping')">
+                            <i class="fas fa-shopping-cart"></i>
+                            Shopping Carts
+                            <span class="nav-badge badge-info">2</span>
+                        </a>
+                        <a href="#approvals" class="nav-item" onclick="showSection('approvals')">
+                            <i class="fas fa-check-circle"></i>
+                            Approvals
+                        </a>
+                        <div class="nav-divider"></div>
+                        <a href="#privacy" class="nav-item" onclick="showSection('privacy')">
+                            <i class="fas fa-shield-alt"></i>
+                            Privacy Center
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="privacy-badge">
+                    <i class="fas fa-lock"></i>
+                    Local AI • Encrypted Data
+                </div>
+            </nav>
+
+            <!-- Main Content Area -->
+            <main class="main-content">
+                <!-- Dashboard Section -->
+                <section id="dashboard" class="section active">
+                    <div class="section-header">
+                        <div>
+                            <h1 class="section-title">Dashboard Overview</h1>
+                            <p class="section-subtitle">AI-powered insights for your household</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="runAIInsights()">
+                            <i class="fas fa-robot"></i> Run AI Analysis
+                        </button>
+                    </div>
+
+                    <!-- Stats Grid -->
+                    <div class="stats-grid mb-3">
+                        <div class="stat-card">
+                            <div class="stat-label">
+                                <i class="fas fa-exclamation-triangle text-danger"></i>
+                                Low Stock Items
+                            </div>
+                            <div class="stat-value text-danger">12</div>
+                        </div>
+                        
+                        <div class="stat-card warning">
+                            <div class="stat-label">
+                                <i class="fas fa-clock text-warning"></i>
+                                Urgent Predictions
+                            </div>
+                            <div class="stat-value text-warning">5</div>
+                        </div>
+                        
+                        <div class="stat-card success">
+                            <div class="stat-label">
+                                <i class="fas fa-shopping-cart text-success"></i>
+                                Pending Carts
+                            </div>
+                            <div class="stat-value text-success">2</div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-label">
+                                <i class="fas fa-dollar-sign text-primary"></i>
+                                Monthly Spend
+                            </div>
+                            <div class="stat-value">$247.50</div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="grid-2 mb-3">
+                        <div class="card">
+                            <h3 class="section-title mb-2">Quick Add</h3>
+                            <div class="grid-2">
+                                <button class="action-btn" onclick="showScanModal()">
+                                    <i class="fas fa-receipt"></i>
+                                    <div>
+                                        <div class="font-semibold">Scan Receipt</div>
+                                        <div class="text-xs text-muted">OCR Processing</div>
+                                    </div>
+                                </button>
+                                <button class="action-btn" onclick="checkEmailOrders()">
+                                    <i class="fas fa-envelope"></i>
+                                    <div>
+                                        <div class="font-semibold">Email Orders</div>
+                                        <div class="text-xs text-muted">Auto-import</div>
+                                    </div>
+                                </button>
+                                <button class="action-btn" onclick="showAddItemModal()">
+                                    <i class="fas fa-plus-circle"></i>
+                                    <div>
+                                        <div class="font-semibold">Manual Entry</div>
+                                        <div class="text-xs text-muted">Quick add</div>
+                                    </div>
+                                </button>
+                                <button class="action-btn" onclick="openVendorIntegration()">
+                                    <i class="fas fa-store"></i>
+                                    <div>
+                                        <div class="font-semibold">Vendor Sync</div>
+                                        <div class="text-xs text-muted">Amazon/Walmart</div>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <h3 class="section-title mb-2">AI Insights</h3>
+                            <div class="ai-insights">
+                                <p class="font-semibold mb-2">💡 Smart Recommendation</p>
+                                <p class="text-sm mb-2">Milk consumption pattern shows you'll run out in 2 days. Amazon has it for 15% off today.</p>
+                                <div class="flex gap-2">
+                                    <button class="btn btn-success btn-sm" onclick="addToCart('milk')">
+                                        <i class="fas fa-cart-plus"></i> Add to Cart
+                                    </button>
+                                    <button class="btn btn-secondary btn-sm">
+                                        View Details
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Inventory Section (Hidden by default) -->
+                <section id="inventory" class="section hidden">
+                    <div class="section-header">
+                        <div>
+                            <h1 class="section-title">Household Inventory</h1>
+                            <p class="section-subtitle">Track and manage your household items</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="btn btn-secondary" onclick="exportInventory()">
+                                <i class="fas fa-download"></i> Export
+                            </button>
+                            <button class="btn btn-primary" onclick="showAddItemModal()">
+                                <i class="fas fa-plus"></i> Add Item
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="flex justify-between items-center mb-3">
+                            <div>
+                                <h3 class="font-semibold">Current Inventory</h3>
+                                <p class="text-sm text-muted">12 items low in stock</p>
+                            </div>
+                            <input type="text" placeholder="Search inventory..." style="padding: 0.5rem; border: 1px solid var(--border); border-radius: var(--radius-md);">
+                        </div>
+                        
+                        <div class="overflow-auto">
+                            <table class="inventory-table">
+                                <thead>
+                                    <tr>
+                                        <th>Item</th>
+                                        <th>Category</th>
+                                        <th>Quantity</th>
+                                        <th>Status</th>
+                                        <th>Expiry</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inventoryTableBody">
+                                    <!-- Inventory items will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Predictions Section (Hidden by default) -->
+                <section id="predictions" class="section hidden">
+                    <div class="section-header">
+                        <div>
+                            <h1 class="section-title">AI Predictions</h1>
+                            <p class="section-subtitle">Smart forecasting and recommendations</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="generatePredictions()">
+                            <i class="fas fa-brain"></i> Generate Predictions
+                        </button>
+                    </div>
+
+                    <div class="prediction-cards" id="predictionCards">
+                        <!-- Prediction cards will be loaded here -->
+                    </div>
+                </section>
+
+                <!-- Shopping Carts Section (Hidden by default) -->
+                <section id="shopping" class="section hidden">
+                    <div class="section-header">
+                        <div>
+                            <h1 class="section-title">Shopping Carts</h1>
+                            <p class="section-subtitle">Manage your automated shopping carts</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="btn btn-secondary" onclick="syncWithVendors()">
+                                <i class="fas fa-sync"></i> Sync Prices
+                            </button>
+                            <button class="btn btn-primary" onclick="buildAICart()">
+                                <i class="fas fa-robot"></i> AI Build Cart
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="card">
+                            <h3 class="section-title mb-3">Active Cart</h3>
+                            <div id="cartItems">
+                                <!-- Cart items will be loaded here -->
+                            </div>
+                            <div class="flex justify-between items-center mt-3 pt-3 border-t">
+                                <div>
+                                    <div class="text-sm text-muted">Total</div>
+                                    <div class="font-bold text-lg">$87.45</div>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button class="btn btn-secondary" onclick="clearCart()">Clear</button>
+                                    <button class="btn btn-success" onclick="requestApproval()">Request Approval</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <h3 class="section-title mb-3">Vendor Comparison</h3>
+                            <div class="space-y-3" id="vendorComparison">
+                                <!-- Vendor comparison will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Approvals Section (Hidden by default) -->
+                <section id="approvals" class="section hidden">
+                    <div class="section-header">
+                        <div>
+                            <h1 class="section-title">Approval Requests</h1>
+                            <p class="section-subtitle">Review and approve shopping carts</p>
+                        </div>
+                    </div>
+
+                    <div class="approval-cards" id="approvalCards">
+                        <!-- Approval cards will be loaded here -->
+                    </div>
+                </section>
+
+                <!-- Privacy Center Section (Hidden by default) -->
+                <section id="privacy" class="section hidden">
+                    <div class="section-header">
+                        <div>
+                            <h1 class="section-title">Privacy Center</h1>
+                            <p class="section-subtitle">Your data is encrypted and stays local</p>
+                        </div>
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="card">
+                            <h3 class="section-title mb-3">Privacy Controls</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <div class="font-semibold">Local AI Processing</div>
+                                        <div class="text-sm text-muted">All ML runs on your device</div>
+                                    </div>
+                                    <div class="badge badge-success">Active</div>
+                                </div>
+                                
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <div class="font-semibold">End-to-End Encryption</div>
+                                        <div class="text-sm text-muted">Your data is encrypted</div>
+                                    </div>
+                                    <div class="badge badge-success">Active</div>
+                                </div>
+                                
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <div class="font-semibold">No Cloud Storage</div>
+                                        <div class="text-sm text-muted">Data stays on your device</div>
+                                    </div>
+                                    <div class="badge badge-success">Active</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <h3 class="section-title mb-3">Data Management</h3>
+                            <div class="space-y-3">
+                                <button class="action-btn" onclick="exportAllData()">
+                                    <i class="fas fa-download"></i>
+                                    <div>
+                                        <div class="font-semibold">Export All Data</div>
+                                        <div class="text-xs text-muted">Download encrypted backup</div>
+                                    </div>
+                                </button>
+                                
+                                <button class="action-btn" onclick="purgeData()">
+                                    <i class="fas fa-trash"></i>
+                                    <div>
+                                        <div class="font-semibold">Purge All Data</div>
+                                        <div class="text-xs text-muted">Permanently delete everything</div>
+                                    </div>
+                                </button>
+                                
+                                <button class="action-btn" onclick="auditLogs()">
+                                    <i class="fas fa-clipboard-list"></i>
+                                    <div>
+                                        <div class="font-semibold">View Audit Log</div>
+                                        <div class="text-xs text-muted">Complete activity history</div>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+
+            <!-- Right Panel - Quick Actions -->
+            <aside class="actions-panel">
+                <div class="card mb-3">
+                    <h3 class="section-title mb-3">Quick Actions</h3>
+                    <div class="action-buttons">
+                        <button class="action-btn" onclick="scanReceipt()">
+                            <i class="fas fa-receipt"></i>
+                            Scan Receipt
+                        </button>
+                        <button class="action-btn" onclick="importEmail()">
+                            <i class="fas fa-envelope"></i>
+                            Import Email
+                        </button>
+                        <button class="action-btn" onclick="runPredictions()">
+                            <i class="fas fa-brain"></i>
+                            Run AI Predictions
+                        </button>
+                        <button class="action-btn" onclick="checkLowStock()">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Check Low Stock
+                        </button>
+                        <button class="action-btn" onclick="buildSmartCart()">
+                            <i class="fas fa-robot"></i>
+                            Build Smart Cart
+                        </button>
+                        <button class="action-btn" onclick="syncVendors()">
+                            <i class="fas fa-store"></i>
+                            Sync Vendors
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 class="section-title mb-3">AI Assistant</h3>
+                    <div class="ai-insights">
+                        <p class="font-semibold mb-2">🤖 AI Assistant</p>
+                        <p class="text-sm mb-2">Based on your patterns, I recommend buying eggs today. Price is lowest this week.</p>
+                        <button class="btn btn-primary btn-sm" onclick="addEggsToCart()">
+                            <i class="fas fa-bolt"></i> Quick Add Eggs
+                        </button>
+                    </div>
+                    
+                    <div class="privacy-badge mt-3">
+                        <i class="fas fa-user-shield"></i>
+                        Your data never leaves this device
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal hidden" id="addItemModal">
+        <!-- Add Item Modal -->
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            // Hide loading screen after 1.5 seconds
+            setTimeout(() => {
+                document.getElementById('loadingScreen').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('loadingScreen').style.display = 'none';
+                }, 300);
+            }, 1500);
+            
+            // Load initial data
+            loadInventory();
+            loadPredictions();
+            loadCart();
+            loadApprovals();
+            
+            // Set up keyboard shortcuts
+            setupKeyboardShortcuts();
+        });
+        
+        // Section Navigation
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionId).classList.remove('hidden');
+            
+            // Update active nav item
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+        
+        // Load Inventory Data
+        async function loadInventory() {
+            const tableBody = document.getElementById('inventoryTableBody');
+            tableBody.innerHTML = `
+                <tr>
+                    <td class="flex items-center gap-3">
+                        <div style="width: 40px; height: 40px; background: #e0e7ff; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-wine-bottle" style="color: #4f46e5;"></i>
+                        </div>
+                        <div>
+                            <div class="font-semibold">Milk</div>
+                            <div class="text-sm text-muted">Organic Whole</div>
+                        </div>
+                    </td>
+                    <td>Dairy</td>
+                    <td>
+                        <div class="quantity-indicator">
+                            <span>0.5L</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill progress-low" style="width: 20%"></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="badge badge-danger">Low</span></td>
+                    <td>2 days</td>
+                    <td>
+                        <div class="flex gap-1">
+                            <button class="icon-btn" onclick="restockItem('milk')">
+                                <i class="fas fa-sync"></i>
+                            </button>
+                            <button class="icon-btn" onclick="editItem('milk')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="flex items-center gap-3">
+                        <div style="width: 40px; height: 40px; background: #d1fae5; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-egg" style="color: #10b981;"></i>
+                        </div>
+                        <div>
+                            <div class="font-semibold">Eggs</div>
+                            <div class="text-sm text-muted">Large Brown</div>
+                        </div>
+                    </td>
+                    <td>Protein</td>
+                    <td>
+                        <div class="quantity-indicator">
+                            <span>6 pieces</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill progress-medium" style="width: 40%"></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="badge badge-warning">Medium</span></td>
+                    <td>7 days</td>
+                    <td>
+                        <div class="flex gap-1">
+                            <button class="icon-btn" onclick="restockItem('eggs')">
+                                <i class="fas fa-sync"></i>
+                            </button>
+                            <button class="icon-btn" onclick="editItem('eggs')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+        
+        // Load Predictions
+        async function loadPredictions() {
+            const container = document.getElementById('predictionCards');
+            container.innerHTML = `
+                <div class="prediction-card urgent">
+                    <div class="prediction-header">
+                        <div>
+                            <div class="font-semibold">Milk</div>
+                            <div class="text-sm text-muted">Will run out in 2 days</div>
+                        </div>
+                        <span class="confidence">85%</span>
+                    </div>
+                    <p class="text-sm mb-2">Based on daily consumption of 0.5L</p>
+                    <div class="flex gap-2">
+                        <button class="btn btn-success btn-sm" onclick="addToCart('milk')">
+                            <i class="fas fa-cart-plus"></i> Add to Cart
+                        </button>
+                        <button class="btn btn-secondary btn-sm">
+                            Snooze
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="prediction-card">
+                    <div class="prediction-header">
+                        <div>
+                            <div class="font-semibold">Bread</div>
+                            <div class="text-sm text-muted">Will run out in 4 days</div>
+                        </div>
+                        <span class="confidence">78%</span>
+                    </div>
+                    <p class="text-sm mb-2">Weekly consumption pattern detected</p>
+                    <div class="flex gap-2">
+                        <button class="btn btn-success btn-sm" onclick="addToCart('bread')">
+                            <i class="fas fa-cart-plus"></i> Add to Cart
+                        </button>
+                        <button class="btn btn-secondary btn-sm">
+                            Snooze
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Load Shopping Cart
+        async function loadCart() {
+            const container = document.getElementById('cartItems');
+            container.innerHTML = `
+                <div class="cart-item">
+                    <div class="cart-item-img">
+                        <i class="fas fa-wine-bottle"></i>
+                    </div>
+                    <div class="cart-item-details">
+                        <div class="font-semibold">Milk - Organic Whole</div>
+                        <div class="text-sm text-muted">1L Carton</div>
+                    </div>
+                    <div class="cart-item-price">$4.99</div>
+                    <div class="quantity-control">
+                        <button class="quantity-btn" onclick="updateQuantity(-1)">-</button>
+                        <span>1</span>
+                        <button class="quantity-btn" onclick="updateQuantity(1)">+</button>
+                    </div>
+                    <button class="icon-btn" onclick="removeFromCart()">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `;
+            
+            const vendorContainer = document.getElementById('vendorComparison');
+            vendorContainer.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <div>
+                        <div class="font-semibold">Amazon Fresh</div>
+                        <div class="text-sm text-muted">Delivery: Tomorrow</div>
+                    </div>
+                    <div class="font-bold">$87.45</div>
+                </div>
+                <div class="flex justify-between items-center">
+                    <div>
+                        <div class="font-semibold">Walmart</div>
+                        <div class="text-sm text-muted">Delivery: Today</div>
+                    </div>
+                    <div class="font-bold">$92.30</div>
+                </div>
+            `;
+        }
+        
+        // Load Approvals
+        async function loadApprovals() {
+            const container = document.getElementById('approvalCards');
+            container.innerHTML = `
+                <div class="approval-card">
+                    <div>
+                        <div class="font-semibold">Weekly Grocery Restock</div>
+                        <div class="text-sm text-muted">Contains 12 items • Amazon Fresh</div>
+                        <div class="font-bold mt-1">$87.45</div>
+                    </div>
+                    <div class="approval-actions">
+                        <button class="btn btn-success" onclick="approveCart()">
+                            <i class="fas fa-check"></i> Approve
+                        </button>
+                        <button class="btn btn-danger" onclick="rejectCart()">
+                            <i class="fas fa-times"></i> Reject
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Action Functions
+        function showAddItemModal() {
+            alert('Add Item Modal would open here');
+            // In a real app, this would show a modal
+        }
+        
+        function showScanModal() {
+            alert('Scan Receipt Modal would open here with OCR processing');
+        }
+        
+        function checkEmailOrders() {
+            alert('Checking email for Amazon/Walmart orders...');
+        }
+        
+        function runAIInsights() {
+            alert('Running AI analysis on consumption patterns...');
+        }
+        
+        function generatePredictions() {
+            alert('Generating AI predictions based on inventory and patterns...');
+            loadPredictions();
+        }
+        
+        function buildAICart() {
+            alert('AI is building an optimized shopping cart...');
+            loadCart();
+        }
+        
+        function syncWithVendors() {
+            alert('Syncing prices with Amazon and Walmart...');
+        }
+        
+        function requestApproval() {
+            alert('Cart sent for approval');
+        }
+        
+        function addToCart(item) {
+            alert(`${item} added to cart`);
+        }
+        
+        function approveCart() {
+            alert('Cart approved! Ready for ordering.');
+        }
+        
+        function rejectCart() {
+            alert('Cart rejected for modifications.');
+        }
+        
+        function exportInventory() {
+            alert('Inventory exported as encrypted CSV');
+        }
+        
+        // Keyboard Shortcuts
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', (e) => {
+                // Ctrl + K for search
+                if (e.ctrlKey && e.key === 'k') {
+                    e.preventDefault();
+                    document.querySelector('input[type="text"]').focus();
+                }
+                
+                // Ctrl + A to add item
+                if (e.ctrlKey && e.key === 'a') {
+                    e.preventDefault();
+                    showAddItemModal();
+                }
+                
+                // Ctrl + P for predictions
+                if (e.ctrlKey && e.key === 'p') {
+                    e.preventDefault();
+                    showSection('predictions');
+                }
+            });
+        }
+        
+        // Privacy Functions
+        function exportAllData() {
+            alert('All data exported with encryption');
+        }
+        
+        function purgeData() {
+            if (confirm('Are you sure? This will permanently delete all data.')) {
+                alert('All data purged from device');
+            }
+        }
+        
+        function auditLogs() {
+            alert('Showing complete audit log');
+        }
+        
+        // Demo functions for quick actions
+        function scanReceipt() {
+            showScanModal();
+        }
+        
+        function importEmail() {
+            checkEmailOrders();
+        }
+        
+        function runPredictions() {
+            generatePredictions();
+        }
+        
+        function checkLowStock() {
+            showSection('inventory');
+        }
+        
+        function buildSmartCart() {
+            buildAICart();
+        }
+        
+        function syncVendors() {
+            syncWithVendors();
+        }
+        
+        function addEggsToCart() {
+            addToCart('eggs');
+        }
+    </script>
+</body>
+</html>

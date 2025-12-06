@@ -1,0 +1,1135 @@
+<!-- templates/base.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}HomeGrocer - AI Shopping Assistant{% endblock %}</title>
+    
+    <!-- Bootstrap 5 for quick styling -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #7209b7;
+            --success: #4cc9f0;
+            --warning: #f72585;
+            --light: #f8f9fa;
+            --dark: #212529;
+        }
+        
+        body {
+            background-color: #f5f7fb;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .sidebar {
+            background: white;
+            min-height: 100vh;
+            border-right: 1px solid #eaeaea;
+            position: fixed;
+            width: 250px;
+            left: 0;
+            top: 0;
+            padding-top: 20px;
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+        }
+        
+        .nav-link {
+            color: #495057;
+            padding: 10px 15px;
+            margin: 5px 10px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        
+        .nav-link:hover, .nav-link.active {
+            background-color: #4361ee;
+            color: white;
+        }
+        
+        .nav-link i {
+            width: 20px;
+            margin-right: 10px;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            transition: transform 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        
+        .badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+        }
+        
+        .table {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .table th {
+            border-top: none;
+            font-weight: 600;
+            color: #6c757d;
+            padding: 15px;
+        }
+        
+        .table td {
+            padding: 15px;
+            vertical-align: middle;
+        }
+        
+        .btn {
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-weight: 500;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+        
+        .progress {
+            height: 6px;
+            border-radius: 3px;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                position: static;
+                width: 100%;
+                min-height: auto;
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Django CSRF Token for API calls -->
+    {% csrf_token %}
+    
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="px-3 mb-4">
+            <h3 class="text-primary">
+                <i class="fas fa-robot"></i> HomeGrocer
+            </h3>
+            <p class="text-muted small">AI Shopping Assistant</p>
+        </div>
+        
+        <nav class="nav flex-column">
+            <a class="nav-link active" href="#dashboard" onclick="showSection('dashboard')">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+            <a class="nav-link" href="#inventory" onclick="showSection('inventory')">
+                <i class="fas fa-boxes"></i> Inventory
+                <span class="badge bg-danger float-end" id="inventory-badge">0</span>
+            </a>
+            <a class="nav-link" href="#predictions" onclick="showSection('predictions')">
+                <i class="fas fa-brain"></i> AI Predictions
+                <span class="badge bg-warning float-end" id="predictions-badge">0</span>
+            </a>
+            <a class="nav-link" href="#shopping" onclick="showSection('shopping')">
+                <i class="fas fa-shopping-cart"></i> Shopping Carts
+                <span class="badge bg-success float-end" id="shopping-badge">0</span>
+            </a>
+            <a class="nav-link" href="#approvals" onclick="showSection('approvals')">
+                <i class="fas fa-check-double"></i> Approvals
+                <span class="badge bg-info float-end" id="approvals-badge">0</span>
+            </a>
+            <div class="mt-4 px-3">
+                <h6 class="text-muted small">QUICK ACTIONS</h6>
+            </div>
+            <a class="nav-link" href="#" onclick="showAddItemModal()">
+                <i class="fas fa-plus-circle"></i> Add Item
+            </a>
+            <a class="nav-link" href="#" onclick="scanReceipt()">
+                <i class="fas fa-receipt"></i> Scan Receipt
+            </a>
+            <a class="nav-link" href="#" onclick="runPredictions()">
+                <i class="fas fa-bolt"></i> Run AI
+            </a>
+        </nav>
+        
+        <div class="mt-4 px-3">
+            <div class="card border-0 bg-light">
+                <div class="card-body">
+                    <h6 class="card-title">AI Status</h6>
+                    <p class="card-text small">Local Processing: <span class="badge bg-success">Active</span></p>
+                    <p class="card-text small">Data Encrypted: <span class="badge bg-success">Yes</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h4 id="section-title">Dashboard</h4>
+                <p class="text-muted mb-0" id="section-subtitle">AI-powered shopping assistant</p>
+            </div>
+            <div>
+                <span class="badge bg-light text-dark me-2">
+                    <i class="fas fa-user"></i> {{ user.username }}
+                </span>
+                <a href="{% url 'logout' %}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </div>
+
+        <!-- Content Sections -->
+        {% block content %}{% endblock %}
+        
+        <!-- Sections will be loaded here -->
+        <div id="content-sections">
+            <!-- Content will be loaded via JavaScript -->
+        </div>
+    </div>
+
+    <!-- Modals Container -->
+    <div id="modals-container"></div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- jQuery for easier AJAX -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- Main JavaScript -->
+    <script>
+        // CSRF Token for AJAX
+        function getCSRFToken() {
+            return document.querySelector('[name=csrfmiddlewaretoken]').value;
+        }
+
+        // API Base URL
+        const API_BASE = '/api/';
+
+        // Show loading indicator
+        function showLoading(selector) {
+            $(selector).html('<div class="text-center py-5"><div class="loading"></div><p class="mt-2">Loading...</p></div>');
+        }
+
+        // Show notification
+        function showNotification(message, type = 'info') {
+            const alert = $(`
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `);
+            $('.main-content').prepend(alert);
+            setTimeout(() => alert.alert('close'), 5000);
+        }
+
+        // Section navigation
+        function showSection(sectionId) {
+            // Update active nav
+            $('.nav-link').removeClass('active');
+            $(`[href="#${sectionId}"]`).addClass('active');
+            
+            // Show loading
+            showLoading('#content-sections');
+            
+            // Load section content
+            switch(sectionId) {
+                case 'dashboard':
+                    loadDashboard();
+                    break;
+                case 'inventory':
+                    loadInventory();
+                    break;
+                case 'predictions':
+                    loadPredictions();
+                    break;
+                case 'shopping':
+                    loadShoppingCarts();
+                    break;
+                case 'approvals':
+                    loadApprovals();
+                    break;
+            }
+            
+            // Update title
+            const titles = {
+                'dashboard': 'Dashboard',
+                'inventory': 'Inventory Management',
+                'predictions': 'AI Predictions',
+                'shopping': 'Shopping Carts',
+                'approvals': 'Approval Requests'
+            };
+            
+            $('#section-title').text(titles[sectionId]);
+            $('#section-subtitle').text('Loading data...');
+        }
+
+        // Load Dashboard
+        async function loadDashboard() {
+            try {
+                const response = await fetch(`${API_BASE}inventory/low_stock/`);
+                const lowStock = await response.json();
+                
+                const predictions = await fetch(`${API_BASE}predictions/`).then(r => r.json());
+                const carts = await fetch(`${API_BASE}carts/?status=PENDING_APPROVAL`).then(r => r.json());
+                const approvals = await fetch(`${API_BASE}approvals/?status=PENDING`).then(r => r.json());
+                
+                $('#content-sections').html(`
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h5 class="mb-0">${lowStock.count || 0}</h5>
+                                        <p class="mb-0 small">Low Stock Items</p>
+                                    </div>
+                                    <i class="fas fa-exclamation-triangle fa-2x opacity-50"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card" style="background: linear-gradient(135deg, #f72585, #b5179e);">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h5 class="mb-0">${predictions.count || 0}</h5>
+                                        <p class="mb-0 small">AI Predictions</p>
+                                    </div>
+                                    <i class="fas fa-brain fa-2x opacity-50"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card" style="background: linear-gradient(135deg, #4cc9f0, #4895ef);">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h5 class="mb-0">${carts.count || 0}</h5>
+                                        <p class="mb-0 small">Pending Carts</p>
+                                    </div>
+                                    <i class="fas fa-shopping-cart fa-2x opacity-50"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card" style="background: linear-gradient(135deg, #7209b7, #560bad);">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h5 class="mb-0">$${247.50}</h5>
+                                        <p class="mb-0 small">Monthly Spend</p>
+                                    </div>
+                                    <i class="fas fa-dollar-sign fa-2x opacity-50"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header bg-white">
+                                    <h5 class="mb-0">Quick Actions</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <button class="btn btn-outline-primary w-100" onclick="showAddItemModal()">
+                                                <i class="fas fa-plus me-2"></i>Add Item
+                                            </button>
+                                        </div>
+                                        <div class="col-6">
+                                            <button class="btn btn-outline-success w-100" onclick="scanReceipt()">
+                                                <i class="fas fa-receipt me-2"></i>Scan Receipt
+                                            </button>
+                                        </div>
+                                        <div class="col-6">
+                                            <button class="btn btn-outline-warning w-100" onclick="runPredictions()">
+                                                <i class="fas fa-brain me-2"></i>Run AI
+                                            </button>
+                                        </div>
+                                        <div class="col-6">
+                                            <button class="btn btn-outline-info w-100" onclick="buildAICart()">
+                                                <i class="fas fa-robot me-2"></i>Build Cart
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header bg-white">
+                                    <h5 class="mb-0">AI Insights</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-lightbulb me-2"></i>
+                                        <strong>Recommendation:</strong> 
+                                        Based on your consumption patterns, you should restock milk within 2 days.
+                                    </div>
+                                    <button class="btn btn-sm btn-primary" onclick="addToCart('milk')">
+                                        <i class="fas fa-cart-plus me-1"></i> Add to Cart
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-4">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0">Recent Low Stock Items</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Product</th>
+                                            <th>Current Quantity</th>
+                                            <th>Min Threshold</th>
+                                            <th>Status</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="low-stock-items">
+                                        ${lowStock.results ? lowStock.results.map(item => `
+                                            <tr>
+                                                <td>
+                                                    <strong>${item.product.name}</strong><br>
+                                                    <small class="text-muted">${item.product.brand || 'Generic'}</small>
+                                                </td>
+                                                <td>${item.quantity} ${item.unit}</td>
+                                                <td>${item.min_threshold}</td>
+                                                <td>
+                                                    <span class="badge bg-danger">Low Stock</span>
+                                                </td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-primary" onclick="addToCart('${item.product.id}')">
+                                                        <i class="fas fa-cart-plus"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        `).join('') : '<tr><td colspan="5" class="text-center">No low stock items</td></tr>'}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                `);
+                
+                // Update badges
+                $('#inventory-badge').text(lowStock.count || 0);
+                $('#predictions-badge').text(predictions.count || 0);
+                $('#shopping-badge').text(carts.count || 0);
+                $('#approvals-badge').text(approvals.count || 0);
+                
+                $('#section-subtitle').text('Dashboard overview');
+                
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                showNotification('Error loading dashboard data', 'danger');
+            }
+        }
+
+        // Load Inventory
+        async function loadInventory() {
+            try {
+                const response = await fetch(`${API_BASE}inventory/`);
+                const data = await response.json();
+                
+                $('#content-sections').html(`
+                    <div class="card">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Current Inventory</h5>
+                            <div>
+                                <input type="text" class="form-control form-control-sm" placeholder="Search items..." 
+                                       style="width: 200px; display: inline-block;" onkeyup="searchInventory(this.value)">
+                                <button class="btn btn-sm btn-primary ms-2" onclick="showAddItemModal()">
+                                    <i class="fas fa-plus"></i> Add Item
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Product</th>
+                                            <th>Category</th>
+                                            <th>Quantity</th>
+                                            <th>Status</th>
+                                            <th>Expiry</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="inventory-items">
+                                        ${data.results ? data.results.map(item => {
+                                            const progress = Math.min((item.quantity / item.min_threshold) * 100, 100);
+                                            const progressClass = progress <= 25 ? 'bg-danger' : 
+                                                                progress <= 50 ? 'bg-warning' : 'bg-success';
+                                            const statusClass = progress <= 25 ? 'danger' : 
+                                                              progress <= 50 ? 'warning' : 'success';
+                                            const statusText = progress <= 25 ? 'Low' : 
+                                                             progress <= 50 ? 'Medium' : 'Good';
+                                            
+                                            return `
+                                                <tr>
+                                                    <td>
+                                                        <div class="d-flex align-items-center">
+                                                            <div class="bg-light rounded-circle p-2 me-3">
+                                                                <i class="fas fa-${getProductIcon(item.product.category)} text-primary"></i>
+                                                            </div>
+                                                            <div>
+                                                                <strong>${item.product.name}</strong><br>
+                                                                <small class="text-muted">${item.product.brand || 'Generic'}</small>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td>${item.product.category_name || 'Uncategorized'}</td>
+                                                    <td>
+                                                        <div>
+                                                            ${item.quantity} ${item.unit}
+                                                            <div class="progress mt-1" style="height: 4px; width: 100px;">
+                                                                <div class="progress-bar ${progressClass}" style="width: ${progress}%"></div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-${statusClass}">${statusText}</span>
+                                                    </td>
+                                                    <td>${item.expiry_date || 'N/A'}</td>
+                                                    <td>
+                                                        <div class="btn-group btn-group-sm">
+                                                            <button class="btn btn-outline-primary" onclick="consumeItem('${item.id}')">
+                                                                <i class="fas fa-minus"></i>
+                                                            </button>
+                                                            <button class="btn btn-outline-success" onclick="restockItem('${item.id}')">
+                                                                <i class="fas fa-plus"></i>
+                                                            </button>
+                                                            <button class="btn btn-outline-secondary" onclick="editItem('${item.id}')">
+                                                                <i class="fas fa-edit"></i>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            `;
+                                        }).join('') : '<tr><td colspan="6" class="text-center">No inventory items</td></tr>'}
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            ${data.count > 10 ? `
+                                <div class="d-flex justify-content-center mt-3">
+                                    <nav>
+                                        <ul class="pagination pagination-sm">
+                                            <li class="page-item"><a class="page-link" href="#">Previous</a></li>
+                                            <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                                            <li class="page-item"><a class="page-link" href="#">2</a></li>
+                                            <li class="page-item"><a class="page-link" href="#">3</a></li>
+                                            <li class="page-item"><a class="page-link" href="#">Next</a></li>
+                                        </ul>
+                                    </nav>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `);
+                
+                $('#section-subtitle').text(`${data.count || 0} items in inventory`);
+                
+            } catch (error) {
+                console.error('Error loading inventory:', error);
+                showNotification('Error loading inventory data', 'danger');
+            }
+        }
+
+        // Load Predictions
+        async function loadPredictions() {
+            try {
+                const response = await fetch(`${API_BASE}predictions/`);
+                const data = await response.json();
+                
+                $('#content-sections').html(`
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <div class="card">
+                                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">AI Predictions</h5>
+                                    <button class="btn btn-sm btn-primary" onclick="runPredictions()">
+                                        <i class="fas fa-brain me-1"></i> Generate Predictions
+                                    </button>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted">
+                                        AI predictions based on consumption patterns and inventory levels.
+                                        These help prevent stockouts and optimize shopping.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        ${data.results ? data.results.map(prediction => {
+                            const daysLeft = Math.ceil((new Date(prediction.predicted_runout_date) - new Date()) / (1000 * 60 * 60 * 24));
+                            const isUrgent = daysLeft <= 2;
+                            
+                            return `
+                                <div class="col-md-6">
+                                    <div class="card ${isUrgent ? 'border-danger' : 'border-warning'}">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <div>
+                                                    <h6 class="mb-1">${prediction.product_name}</h6>
+                                                    <p class="text-muted small mb-0">
+                                                        <i class="fas fa-calendar me-1"></i>
+                                                        Predicted runout: ${prediction.predicted_runout_date}
+                                                    </p>
+                                                </div>
+                                                <span class="badge ${isUrgent ? 'bg-danger' : 'bg-warning'}">
+                                                    ${Math.round(prediction.confidence * 100)}% confidence
+                                                </span>
+                                            </div>
+                                            
+                                            <p class="small">
+                                                <i class="fas fa-info-circle me-1"></i>
+                                                Expected to run out in <strong>${daysLeft} days</strong>
+                                            </p>
+                                            
+                                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                                <span class="text-${isUrgent ? 'danger' : 'warning'}">
+                                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                                    ${isUrgent ? 'URGENT - Order Now' : 'Consider Restocking'}
+                                                </span>
+                                                <div>
+                                                    <button class="btn btn-sm btn-primary" onclick="addToCart('${prediction.product}')">
+                                                        <i class="fas fa-cart-plus me-1"></i> Add to Cart
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-secondary ms-1" onclick="snoozePrediction('${prediction.id}')">
+                                                        <i class="fas fa-clock"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('') : `
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-body text-center py-5">
+                                        <i class="fas fa-brain fa-3x text-muted mb-3"></i>
+                                        <h5>No Predictions Yet</h5>
+                                        <p class="text-muted">Run AI analysis to generate predictions</p>
+                                        <button class="btn btn-primary" onclick="runPredictions()">
+                                            <i class="fas fa-brain me-1"></i> Generate Predictions
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `}
+                    </div>
+                `);
+                
+                $('#section-subtitle').text(`${data.count || 0} AI predictions generated`);
+                
+            } catch (error) {
+                console.error('Error loading predictions:', error);
+                showNotification('Error loading predictions', 'danger');
+            }
+        }
+
+        // Load Shopping Carts
+        async function loadShoppingCarts() {
+            try {
+                const response = await fetch(`${API_BASE}carts/`);
+                const data = await response.json();
+                
+                $('#content-sections').html(`
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <div class="card">
+                                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">Shopping Carts</h5>
+                                    <div>
+                                        <button class="btn btn-sm btn-outline-secondary me-2" onclick="syncWithVendors()">
+                                            <i class="fas fa-sync me-1"></i> Sync Prices
+                                        </button>
+                                        <button class="btn btn-sm btn-primary" onclick="buildAICart()">
+                                            <i class="fas fa-robot me-1"></i> AI Build Cart
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-8">
+                            <div class="card">
+                                <div class="card-header bg-white">
+                                    <h5 class="mb-0">Active Cart</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div id="cart-items">
+                                        <div class="text-center py-5">
+                                            <div class="loading"></div>
+                                            <p class="mt-2">Loading cart items...</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                                        <div>
+                                            <small class="text-muted">Total</small>
+                                            <h4 id="cart-total">$0.00</h4>
+                                        </div>
+                                        <div>
+                                            <button class="btn btn-outline-secondary me-2" onclick="clearCart()">Clear</button>
+                                            <button class="btn btn-success" onclick="requestApproval()">Request Approval</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header bg-white">
+                                    <h5 class="mb-0">Vendor Comparison</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div id="vendor-comparison">
+                                        <div class="text-center py-3">
+                                            <div class="loading"></div>
+                                            <p class="mt-2 small">Comparing vendors...</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card mt-3">
+                                <div class="card-header bg-white">
+                                    <h5 class="mb-0">Cart History</h5>
+                                </div>
+                                <div class="card-body">
+                                    ${data.results ? data.results.slice(0, 5).map(cart => `
+                                        <div class="border-bottom pb-2 mb-2">
+                                            <div class="d-flex justify-content-between">
+                                                <strong class="small">Cart #${cart.id.substring(0, 8)}</strong>
+                                                <span class="badge bg-${getStatusColor(cart.status)}">${cart.status}</span>
+                                            </div>
+                                            <small class="text-muted">${cart.items_count} items • $${cart.total_amount}</small>
+                                        </div>
+                                    `).join('') : '<p class="text-muted small">No previous carts</p>'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `);
+                
+                // Load cart items
+                loadCartItems();
+                loadVendorComparison();
+                
+                $('#section-subtitle').text('Manage shopping carts and compare vendors');
+                
+            } catch (error) {
+                console.error('Error loading shopping carts:', error);
+                showNotification('Error loading shopping carts', 'danger');
+            }
+        }
+
+        // Load Approvals
+        async function loadApprovals() {
+            try {
+                const response = await fetch(`${API_BASE}approvals/`);
+                const data = await response.json();
+                
+                $('#content-sections').html(`
+                    <div class="card">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0">Approval Requests</h5>
+                        </div>
+                        <div class="card-body">
+                            ${data.results && data.results.length > 0 ? data.results.map(approval => `
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-3">
+                                            <div>
+                                                <h6>Cart #${approval.cart.id.substring(0, 8)}</h6>
+                                                <p class="text-muted small mb-0">
+                                                    Requested by ${approval.requested_by.username} • 
+                                                    ${new Date(approval.requested_at).toLocaleDateString()}
+                                                </p>
+                                            </div>
+                                            <span class="badge bg-${approval.status === 'PENDING' ? 'warning' : 
+                                                                   approval.status === 'APPROVED' ? 'success' : 'danger'}">
+                                                ${approval.status}
+                                            </span>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <p class="mb-1"><strong>Cart Details:</strong></p>
+                                            <p class="text-muted small mb-0">
+                                                ${approval.cart.items_count} items • 
+                                                $${approval.cart.total_amount} • 
+                                                ${approval.cart.vendor_name || 'Multiple vendors'}
+                                            </p>
+                                        </div>
+                                        
+                                        ${approval.notes ? `
+                                            <div class="alert alert-light small mb-3">
+                                                <strong>Notes:</strong> ${approval.notes}
+                                            </div>
+                                        ` : ''}
+                                        
+                                        ${approval.status === 'PENDING' ? `
+                                            <div class="d-flex justify-content-end gap-2">
+                                                <button class="btn btn-sm btn-success" onclick="approveCart('${approval.id}')">
+                                                    <i class="fas fa-check me-1"></i> Approve
+                                                </button>
+                                                <button class="btn btn-sm btn-danger" onclick="rejectCart('${approval.id}')">
+                                                    <i class="fas fa-times me-1"></i> Reject
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-secondary" onclick="modifyCart('${approval.id}')">
+                                                    <i class="fas fa-edit me-1"></i> Modify
+                                                </button>
+                                            </div>
+                                        ` : `
+                                            <div class="text-end">
+                                                <small class="text-muted">
+                                                    ${approval.approved_by ? `Approved by ${approval.approved_by.username}` : 'Rejected'} •
+                                                    ${new Date(approval.reviewed_at).toLocaleDateString()}
+                                                </small>
+                                            </div>
+                                        `}
+                                    </div>
+                                </div>
+                            `).join('') : `
+                                <div class="text-center py-5">
+                                    <i class="fas fa-check-circle fa-3x text-muted mb-3"></i>
+                                    <h5>No Pending Approvals</h5>
+                                    <p class="text-muted">All shopping carts are approved or processed</p>
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                `);
+                
+                $('#section-subtitle').text(`${data.count || 0} approval requests`);
+                
+            } catch (error) {
+                console.error('Error loading approvals:', error);
+                showNotification('Error loading approvals', 'danger');
+            }
+        }
+
+        // Helper Functions
+        function getProductIcon(category) {
+            const icons = {
+                'Dairy': 'wine-bottle',
+                'Produce': 'apple-alt',
+                'Meat': 'drumstick-bite',
+                'Bakery': 'bread-slice',
+                'Pantry': 'jar',
+                'Beverages': 'wine-glass-alt',
+                'default': 'shopping-basket'
+            };
+            return icons[category] || icons.default;
+        }
+
+        function getStatusColor(status) {
+            const colors = {
+                'DRAFT': 'secondary',
+                'PENDING_APPROVAL': 'warning',
+                'APPROVED': 'success',
+                'ORDERED': 'info',
+                'DELIVERED': 'primary',
+                'CANCELLED': 'danger'
+            };
+            return colors[status] || 'secondary';
+        }
+
+        // Action Functions
+        async function showAddItemModal() {
+            $('#modals-container').html(`
+                <div class="modal fade show" style="display: block; background: rgba(0,0,0,0.5);">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Add Item to Inventory</h5>
+                                <button type="button" class="btn-close" onclick="$('#modals-container').empty()"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="addItemForm">
+                                    <div class="mb-3">
+                                        <label class="form-label">Product Name</label>
+                                        <input type="text" class="form-control" name="name" required>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Category</label>
+                                            <select class="form-select" name="category">
+                                                <option value="Dairy">Dairy</option>
+                                                <option value="Produce">Produce</option>
+                                                <option value="Meat">Meat</option>
+                                                <option value="Bakery">Bakery</option>
+                                                <option value="Pantry">Pantry</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Brand</label>
+                                            <input type="text" class="form-control" name="brand">
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Quantity</label>
+                                            <input type="number" class="form-control" name="quantity" step="0.01" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Unit</label>
+                                            <select class="form-select" name="unit">
+                                                <option value="each">each</option>
+                                                <option value="g">g</option>
+                                                <option value="kg">kg</option>
+                                                <option value="ml">ml</option>
+                                                <option value="L">L</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Minimum Threshold</label>
+                                        <input type="number" class="form-control" name="min_threshold" value="1" step="0.01">
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" onclick="$('#modals-container').empty()">Cancel</button>
+                                <button type="button" class="btn btn-primary" onclick="submitAddItem()">Add Item</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `);
+        }
+
+        async function submitAddItem() {
+            const form = document.getElementById('addItemForm');
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData);
+            
+            try {
+                const response = await fetch(`${API_BASE}inventory/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCSRFToken()
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    showNotification('Item added successfully', 'success');
+                    $('#modals-container').empty();
+                    loadInventory();
+                    loadDashboard();
+                } else {
+                    throw new Error('Failed to add item');
+                }
+            } catch (error) {
+                showNotification('Error adding item: ' + error.message, 'danger');
+            }
+        }
+
+        async function runPredictions() {
+            showNotification('Generating AI predictions...', 'info');
+            try {
+                const response = await fetch(`${API_BASE}predictions/generate_predictions/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCSRFToken()
+                    }
+                });
+                
+                if (response.ok) {
+                    showNotification('AI predictions generated successfully', 'success');
+                    loadPredictions();
+                    loadDashboard();
+                }
+            } catch (error) {
+                showNotification('Error generating predictions', 'danger');
+            }
+        }
+
+        async function buildAICart() {
+            showNotification('AI is building an optimized cart...', 'info');
+            try {
+                const response = await fetch(`${API_BASE}carts/build_ai_cart/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCSRFToken()
+                    }
+                });
+                
+                if (response.ok) {
+                    showNotification('AI cart built successfully', 'success');
+                    loadShoppingCarts();
+                }
+            } catch (error) {
+                showNotification('Error building AI cart', 'danger');
+            }
+        }
+
+        async function loadCartItems() {
+            try {
+                const response = await fetch(`${API_BASE}carts/active/`);
+                const cart = await response.json();
+                
+                if (cart) {
+                    $('#cart-items').html(cart.items.map(item => `
+                        <div class="d-flex align-items-center mb-3 pb-3 border-bottom">
+                            <div class="bg-light rounded p-2 me-3">
+                                <i class="fas fa-${getProductIcon(item.product.category)} text-primary"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">${item.product_name}</h6>
+                                <small class="text-muted">$${item.unit_price} each</small>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <button class="btn btn-sm btn-outline-secondary" onclick="updateCartItem('${item.id}', -1)">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <span class="mx-2">${item.quantity}</span>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="updateCartItem('${item.id}', 1)">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger ms-3" onclick="removeCartItem('${item.id}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `).join(''));
+                    
+                    $('#cart-total').text('$' + (cart.total_amount || '0.00'));
+                } else {
+                    $('#cart-items').html(`
+                        <div class="text-center py-5">
+                            <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+                            <h5>Cart is Empty</h5>
+                            <p class="text-muted">Add items to your shopping cart</p>
+                        </div>
+                    `);
+                }
+            } catch (error) {
+                console.error('Error loading cart items:', error);
+            }
+        }
+
+        async function loadVendorComparison() {
+            try {
+                const response = await fetch(`${API_BASE}vendors/comparison/`);
+                const vendors = await response.json();
+                
+                $('#vendor-comparison').html(vendors.map(vendor => `
+                    <div class="mb-2 p-2 border rounded">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>${vendor.name}</strong>
+                                <div class="small text-muted">${vendor.delivery_time}</div>
+                            </div>
+                            <div class="text-end">
+                                <h5 class="mb-0">$${vendor.total_price}</h5>
+                                <button class="btn btn-sm btn-primary mt-1">Select</button>
+                            </div>
+                        </div>
+                    </div>
+                `).join(''));
+            } catch (error) {
+                console.error('Error loading vendor comparison:', error);
+            }
+        }
+
+        // Initialize
+        $(document).ready(function() {
+            // Hide loading
+            $('.loading-screen').fadeOut();
+            
+            // Load dashboard by default
+            showSection('dashboard');
+            
+            // Refresh data every 30 seconds
+            setInterval(() => {
+                const activeSection = $('.nav-link.active').attr('href').replace('#', '');
+                if (activeSection === 'dashboard') {
+                    loadDashboard();
+                }
+            }, 30000);
+        });
+
+        // Expose functions to window
+        window.showSection = showSection;
+        window.showAddItemModal = showAddItemModal;
+        window.runPredictions = runPredictions;
+        window.buildAICart = buildAICart;
+        window.scanReceipt = function() { showNotification('Scan receipt feature coming soon', 'info'); };
+        window.checkEmailOrders = function() { showNotification('Email import feature coming soon', 'info'); };
+        window.syncWithVendors = function() { showNotification('Syncing with vendors...', 'info'); };
+        
+        // Add other functions as needed
+        window.addToCart = function(productId) {
+            showNotification('Added to cart', 'success');
+            // Implementation would call API
+        };
+        
+        window.approveCart = function(approvalId) {
+            showNotification('Cart approved', 'success');
+            // Implementation would call API
+        };
+
+    </script>
+</body>
+</html>
