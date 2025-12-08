@@ -322,6 +322,16 @@
                 const carts = await fetch(`${API_BASE}carts/?status=PENDING_APPROVAL`).then(r => r.json());
                 const approvals = await fetch(`${API_BASE}approvals/?status=PENDING`).then(r => r.json());
                 
+                 // Use the correct endpoint
+                const lowStockResponse = await fetch(`${API_BASE}inventory/low_stock/`);
+                    
+                const predictionsResponse = await fetch(`${API_BASE}predictions/`);
+                    
+                const cartsResponse = await fetch(`${API_BASE}carts/?status=PENDING_APPROVAL`);
+                    
+                const approvalsResponse = await fetch(`${API_BASE}approvals/?status=PENDING`);
+
+
                 $('#content-sections').html(`
                     <div class="row mb-4">
                         <div class="col-md-3">

@@ -2,6 +2,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 import uuid
+from django.utils import timezone
+from datetime import timedelta
 
 class Category(models.Model):
     """Product categories (e.g., Dairy, Produce, Meat)"""
@@ -12,6 +14,7 @@ class Category(models.Model):
     
     class Meta:
         verbose_name_plural = "Categories"
+        ordering = ['name']
     
     def __str__(self):
         return self.name
@@ -29,7 +32,11 @@ class Product(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
-        unique_together = ['name', 'brand', 'size']
+        ordering = ['name']
+        indexes = [
+            models.Index(fields=['name']),
+            models.Index(fields=['category']),
+        ]
     
     def __str__(self):
         return f"{self.name} ({self.brand}) - {self.size}"
@@ -39,7 +46,7 @@ class InventoryItem(models.Model):
     """Current household inventory items"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='inventory_items')
-    quantity = models.DecimalField(max_digits=10, decimal_places=2)
+    quantity = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     unit = models.CharField(max_length=20)  # Override product unit if needed
     purchase_date = models.DateField(null=True, blank=True)
     expiry_date = models.DateField(null=True, blank=True)
@@ -48,12 +55,28 @@ class InventoryItem(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+    class Meta:
+        ordering = ['product__name']
+        indexes = [
+            models.Index(fields=['product']),
+            models.Index(fields=['expiry_date']),
+        ]
+    
     def __str__(self):
         return f"{self.product.name} - {self.quantity} {self.unit}"
     
     @property
     def is_low(self):
+        """Check if quantity is at or below minimum threshold"""
         return self.quantity <= self.min_threshold
+    
+    @property
+    def days_until_expiry(self):
+        """Calculate days until expiry"""
+        if self.expiry_date:
+            delta = self.expiry_date - timezone.now().date()
+            return delta.days
+        return None
 
 
 class ConsumptionHistory(models.Model):
@@ -61,16 +84,19 @@ class ConsumptionHistory(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     inventory_item = models.ForeignKey(InventoryItem, on_delete=models.CASCADE, related_name='consumption_history')
     quantity_used = models.DecimalField(max_digits=10, decimal_places=2)
-    date = models.DateField()
+    date = models.DateField(default=timezone.now)
     source = models.CharField(max_length=50, choices=[
         ('MANUAL', 'Manual Entry'),
         ('RECEIPT', 'Receipt OCR'),
         ('API', 'Smart Appliance API'),
         ('PREDICTION', 'ML Prediction'),
-    ])
+    ], default='MANUAL')
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
+    
+    class Meta:
+        ordering = ['-date']
+        verbose_name_plural = "Consumption Histories"
 
 
 class ConsumptionPattern(models.Model):
@@ -91,21 +117,36 @@ class ConsumptionPattern(models.Model):
     
     class Meta:
         unique_together = ['product', 'user']
+        ordering = ['-confidence_score']
 
 
 class Prediction(models.Model):
     """Store ML predictions for reordering"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='predictions')
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     predicted_quantity = models.DecimalField(max_digits=10, decimal_places=2)
     predicted_runout_date = models.DateField()
-    confidence = models.DecimalField(max_digits=5, decimal_places=4)
+    confidence = models.DecimalField(max_digits=5, decimal_places=4, default=0.0)
     created_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
+    
+    class Meta:
+        ordering = ['predicted_runout_date']
+        indexes = [
+            models.Index(fields=['predicted_runout_date']),
+            models.Index(fields=['user', 'is_active']),
+        ]
     
     def __str__(self):
         return f"Prediction: {self.product.name} - Runout: {self.predicted_runout_date}"
     
+    @property
+    def days_until_runout(self):
+        """Calculate days until predicted runout"""
+        delta = self.predicted_runout_date - timezone.now().date()
+        return delta.days
+
 
 class Vendor(models.Model):
     """Supported vendors (Amazon, Walmart, etc.)"""
@@ -113,9 +154,12 @@ class Vendor(models.Model):
     name = models.CharField(max_length=100)
     api_name = models.CharField(max_length=50)  # e.g., "amazon", "walmart"
     base_url = models.URLField()
-    api_key = models.CharField(max_length=255, blank=True)  # Encrypted in real implementation
+    api_key = models.CharField(max_length=255, blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['name']
     
     def __str__(self):
         return self.name
@@ -135,6 +179,7 @@ class VendorProduct(models.Model):
     
     class Meta:
         unique_together = ['product', 'vendor']
+        ordering = ['product__name']
     
     def __str__(self):
         return f"{self.product.name} on {self.vendor.name}"
@@ -142,10 +187,6 @@ class VendorProduct(models.Model):
 
 class ShoppingCart(models.Model):
     """Shopping cart for automatic orders"""
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='carts')
-    vendor = models.ForeignKey(Vendor, on_delete=models.CASCADE, null=True, blank=True)
-    
     STATUS_CHOICES = [
         ('DRAFT', 'Draft - Building'),
         ('READY', 'Ready for Review'),
@@ -156,6 +197,10 @@ class ShoppingCart(models.Model):
         ('CANCELLED', 'Cancelled'),
     ]
     
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='carts')
+    vendor = models.ForeignKey(Vendor, on_delete=models.SET_NULL, null=True, blank=True)
+    
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='DRAFT')
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     estimated_delivery = models.DateField(null=True, blank=True)
@@ -164,8 +209,25 @@ class ShoppingCart(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'status']),
+            models.Index(fields=['created_at']),
+        ]
+    
     def __str__(self):
         return f"Cart #{self.id.hex[:8]} - {self.get_status_display()}"
+    
+    def update_total(self):
+        """Recalculate total amount from cart items"""
+        total = sum(item.total_price for item in self.items.all())
+        self.total_amount = total
+        self.save()
+    
+    @property
+    def items_count(self):
+        return self.items.count()
 
 
 class CartItem(models.Model):
@@ -173,34 +235,38 @@ class CartItem(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     cart = models.ForeignKey(ShoppingCart, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    vendor_product = models.ForeignKey(VendorProduct, on_delete=models.CASCADE, null=True, blank=True)
-    quantity = models.DecimalField(max_digits=10, decimal_places=2)
-    unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+    vendor_product = models.ForeignKey(VendorProduct, on_delete=models.SET_NULL, null=True, blank=True)
+    quantity = models.DecimalField(max_digits=10, decimal_places=2, default=1)
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     notes = models.TextField(blank=True)
     is_substitution = models.BooleanField(default=False)
     original_product = models.ForeignKey(Product, on_delete=models.SET_NULL, 
                                          null=True, blank=True, 
                                          related_name='substituted_items')
     
-    @property
-    def total_price(self):
-        return self.quantity * self.unit_price
+    class Meta:
+        ordering = ['product__name']
+        unique_together = ['cart', 'product']
     
     def __str__(self):
         return f"{self.quantity} x {self.product.name}"
     
+    @property
+    def total_price(self):
+        return self.quantity * self.unit_price
+
 
 class ApprovalRule(models.Model):
     """Rules for automatic approval"""
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='approval_rules')
-    
     RULE_TYPE_CHOICES = [
         ('AMOUNT', 'Maximum Amount'),
         ('CATEGORY', 'Category Allowlist'),
         ('VENDOR', 'Vendor Allowlist'),
         ('ITEM', 'Item Allowlist'),
     ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='approval_rules')
     
     rule_type = models.CharField(max_length=20, choices=RULE_TYPE_CHOICES)
     
@@ -217,19 +283,22 @@ class ApprovalRule(models.Model):
     priority = models.IntegerField(default=0)  # Lower number = higher priority
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['priority', '-created_at']
 
 
 class ApprovalRequest(models.Model):
     """Approval requests for shopping carts"""
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    cart = models.OneToOneField(ShoppingCart, on_delete=models.CASCADE, related_name='approval_request')
-    
     STATUS_CHOICES = [
         ('PENDING', 'Pending'),
         ('APPROVED', 'Approved'),
         ('REJECTED', 'Rejected'),
         ('MODIFIED', 'Modified and Approved'),
     ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    cart = models.OneToOneField(ShoppingCart, on_delete=models.CASCADE, related_name='approval_request')
     
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
     requested_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='approvals_requested')
@@ -239,15 +308,43 @@ class ApprovalRequest(models.Model):
     reviewed_at = models.DateTimeField(null=True, blank=True)
     notes = models.TextField(blank=True)
     
+    class Meta:
+        ordering = ['-requested_at']
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['requested_at']),
+        ]
+    
     def __str__(self):
         return f"Approval for Cart #{self.cart.id.hex[:8]}"
     
+    def approve(self, user, notes=''):
+        """Approve this request"""
+        self.status = 'APPROVED'
+        self.approved_by = user
+        self.reviewed_at = timezone.now()
+        self.notes = notes
+        self.save()
+        
+        # Update cart status
+        self.cart.status = 'APPROVED'
+        self.cart.save()
+    
+    def reject(self, user, notes=''):
+        """Reject this request"""
+        self.status = 'REJECTED'
+        self.approved_by = user
+        self.reviewed_at = timezone.now()
+        self.notes = notes
+        self.save()
+        
+        # Update cart status
+        self.cart.status = 'CANCELLED'
+        self.cart.save()
+
 
 class AuditLog(models.Model):
     """Comprehensive audit trail for all actions"""
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
-    
     ACTION_CHOICES = [
         ('CREATE', 'Create'),
         ('UPDATE', 'Update'),
@@ -257,7 +354,11 @@ class AuditLog(models.Model):
         ('ORDER', 'Place Order'),
         ('PREDICT', 'Make Prediction'),
         ('SYNC', 'Sync with Vendor'),
+        ('CONSUME', 'Consume Item'),
     ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     
     action = models.CharField(max_length=20, choices=ACTION_CHOICES)
     model_name = models.CharField(max_length=100)  # Which model was affected
@@ -271,10 +372,12 @@ class AuditLog(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     
     class Meta:
+        ordering = ['-timestamp']
         indexes = [
             models.Index(fields=['timestamp']),
             models.Index(fields=['user', 'timestamp']),
             models.Index(fields=['model_name', 'object_id']),
+            models.Index(fields=['action']),
         ]
     
     def __str__(self):
